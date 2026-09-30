@@ -3,18 +3,23 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { OrderProvider } from "./context/OrderContext";
-
+import { WishlistProvider } from "./context/WishlistContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-    <OrderProvider>
-      <CartProvider>
-        <App />
-      </CartProvider>
-    </OrderProvider>
-  </BrowserRouter>
+      <AuthProvider>
+        <OrderProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </WishlistProvider>
+        </OrderProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>
 );
