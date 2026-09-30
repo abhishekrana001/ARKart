@@ -7,11 +7,16 @@
   background-color: white;
 }
 
-.logo {
+.name-logo {
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  color: black;
-  font-size: 24px;
-  font-weight: bold;
+}
+
+.name-logo img {
+  width: 8rem;
+  height: auto;
+  display: block;
 }
 
 .nav-links {
@@ -148,15 +153,14 @@
 }
 
 @media (max-width: 768px) {
-
   .navbar {
     padding: 0 20px;
   }
 
+  .search-box {
+    margin-left: 60px;
+  }
 
- .category-wrapper {
-  width: 100%;
- }
   .menu-btn {
     display: block;
     border: none;
@@ -164,14 +168,6 @@
     font-size: 25px;
     cursor: pointer;
   }
- 
- .category-btn {
-  text-align: left;
- }
- 
- .search-box{
-  margin-left: 70px;
- }
 
   .nav-links {
     display: none;
@@ -179,21 +175,95 @@
     top: 70px;
     left: 0;
     width: 100%;
+    box-sizing: border-box;
     background-color: white;
     padding: 20px;
     flex-direction: column;
     gap: 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
   }
 
   .nav-links.active {
     display: flex;
   }
 
+  .category-wrapper {
+    width: 100%;
+  }
+
+  .category-btn {
+    text-align: left;
+  }
+
+  .category-dropdown {
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    padding: 5px 0;
+  }
+
+  .navbar-actions {
+    gap: 14px;
+  }
 }
 
-@media(max-width: 600px) {
-  .wish-icon{
+
+@media (max-width: 430px) {
+  .navbar {
+    padding: 0 15px;
+  }
+  .search-box{
     display: none;
+  }
+
+  .nav-icon:first-of-type {
+    display: none;
+  }
+
+  .logo {
+    font-size: 21px;
+  }
+
+  .navbar-actions {
+    gap: 10px;
+  }
+
+  .nav-icon {
+    font-size: 18px;
+  }
+
+  .account-btn {
+    font-size: 19px;
+  }
+
+  .menu-btn {
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 375px) {
+  .navbar {
+    padding: 0 10px;
+  }
+
+  .search-box{
+    display: none;
+  }
+
+  .logo {
+    font-size: 19px;
+  }
+
+  .navbar-actions {
+    gap: 7px;
+  }
+
+  .nav-icon {
+    font-size: 17px;
+  }
+
+  .menu-btn {
+    font-size: 21px;
   }
 }

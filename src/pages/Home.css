@@ -17,8 +17,12 @@
 }
 
 .hero-content > p:first-child {
-  font-size: 16px;
+  font-size: 2rem;
   font-weight: 600;
+}
+
+.hero-content p {
+  font-size: 1.3rem;
 }
 
 .hero-content button {
@@ -41,17 +45,157 @@
   display: block;
 }
 
+.shop-btn {
+  display: inline-block;
+  margin-top: 20px;
+  color: black;
+  padding: 10px 15px;
+  border: 2px solid rgb(117, 114, 114);
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.shop-btn:hover{
+  border: 3px solid rgb(65, 65, 220);
+  background-color: rgb(74, 74, 79);
+  color: white;
+}
+
+.categories {
+  padding: 60px 80px;
+  text-align: center;
+}
+
+.categories h2 {
+  font-size: 32px;
+  margin-bottom: 35px;
+}
+
+.category-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.category-card {
+  justify-content: center;
+  align-items: center;
+  height: 13rem;
+  width: 13rem;
+  padding: 20px;
+  border-radius: 12px;
+  background-color: #f5f7fa;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.category-card img {
+  margin-top: 10px;
+  width: auto;
+  height: 8rem;
+  object-fit: contain;
+  transition: 0.3s;
+}
+
+.category-card:hover img {
+  transform: scale(1.05);
+}
+
+.category-card button{
+  margin-top: 30px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  color: black;
+}
+
+.category-card button:hover{
+  border: 3px solid rgb(65, 65, 220);
+  background-color: rgb(74, 74, 79);
+  color: white;
+}
+
+.category-container a {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+}
+
+
 @media (max-width: 768px) {
-   .hero {
-    display: flex;
+  .hero {
+    width: 100%;
+    box-sizing: border-box;
     flex-direction: column;
+    padding: 40px 20px;
+    text-align: center;
   }
 
   .hero-content {
     width: 100%;
   }
 
+  .hero-content h1 {
+    font-size: 40px;
+  }
+
   .hero-image {
     width: 100%;
+    margin-top: 30px;
+  }
+
+  .hero-image img {
+    width: 100%;
+  }
+}
+
+@media (max-width: 425px) {
+  .hero {
+    padding: 30px 15px;
+  }
+
+  .hero-content h1 {
+    font-size: 32px;
+  }
+
+  .hero-content p {
+    font-size: 15px;
+  }
+
+  .hero-image {
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 320px) {
+  .hero {
+    padding: 25px 10px;
+  }
+
+  .hero-content h1 {
+    font-size: 28px;
+  }
+
+  .hero-content p {
+    font-size: 14px;
+  }
+
+  .hero-content button {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  .hero-image {
+    width: 100%;
+    margin-top: 20px;
   }
 }

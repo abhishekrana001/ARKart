@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./Navbar.css";
-import Home from "../pages/Home";
+import Arkart from "../assets/arkart.png"
 
 function Navbar() {
     const [categoryOpen, setCategoryOpen] = useState(false);
@@ -11,13 +11,13 @@ function Navbar() {
   return (
     <nav className="navbar">
 
-      <Link to="/" className="logo">
-        ARKart
+      <Link to="/" className="name-logo">
+        <img src={Arkart} alt="logo" />
       </Link>
 
       <div className={`nav-links ${menuOpen ? "active" : ""}`}>
         <Link to="/">Home</Link>
-        <Link to="/products">Shop</Link>
+        <Link to="/products">Shop Now</Link>
         <div className="category-wrapper">
 
         <button
@@ -85,7 +85,7 @@ function Navbar() {
             </button>
 
             {accountOpen && (
-                <div className="category-dropdown">
+                <div className="account-dropdown">
 
                 <Link to="/products?category=electronics">
                     👤 My Profile
