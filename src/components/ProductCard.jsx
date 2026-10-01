@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { Star, ShoppingBag, Check, Heart } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
+import { useToast } from "../context/ToastContext";
 
 function ProductCard({ product }) {
-  const { cart, setCart } = useContext(CartContext);
+  const { addToCart } = useContext(CartContext);
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
+  const { addToast } = useToast();
   const [added, setAdded] = useState(false);
 
   const isWishlisted = isInWishlist(product.id);
@@ -15,22 +17,23 @@ function ProductCard({ product }) {
     e.preventDefault();
     e.stopPropagation();
 
-    const existingProduct = cart.find((item) => item.id === product.id);
-
-    if (existingProduct) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
-      );
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
+    addToCart(product, 1);
+    addToast(`Added "${product.name}" to cart!`, "cart");
 
     setAdded(true);
     setTimeout(() => setAdded(false), 1400);
+  };
+
+  const handleToggleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    toggleWishlist(product);
+    if (!isWishlisted) {
+      addToast(`Added to your Wishlist!`, "heart");
+    } else {
+      addToast(`Removed from your Wishlist`, "success");
+    }
   };
 
   const originalPrice = Math.round(product.price * 1.35);
@@ -40,15 +43,11 @@ function ProductCard({ product }) {
     <div className="product-card">
       <button
         className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleWishlist(product);
-        }}
+        onClick={handleToggleWishlist}
         title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
         aria-label="Wishlist"
       >
-        <Heart size={18} fill={isWishlisted ? "#ef4444" : "none"} color={isWishlisted ? "#ef4444" : "#64748b"} />
+        <Heart size={18} fill={isWishlisted ? "#ef4444" : "none"} color={isWishlisted ? "#ef4444" : "var(--text-muted)"} />
       </button>
 
       <Link to={`/products/${product.id}`} className="product-card-link">
@@ -61,7 +60,7 @@ function ProductCard({ product }) {
           <div className="product-meta">
             <span className="product-category-label">{product.category}</span>
             <div className="product-rating">
-              <Star size={14} className="star-icon" fill="#f59e0b" color="#f59e0b" />
+              <Star size={13} className="star-icon" fill="#f59e0b" color="#f59e0b" />
               <span>{product.rating}</span>
             </div>
           </div>

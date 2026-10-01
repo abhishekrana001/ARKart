@@ -1,143 +1,150 @@
 import { useContext } from "react";
 import { OrderContext } from "../context/OrderContext";
 import { Link } from "react-router-dom";
-import { Package, ArrowRight, Calendar, MapPin, CheckCircle2 } from "lucide-react";
+import { 
+  Package, 
+  ArrowRight, 
+  Calendar, 
+  MapPin, 
+  CheckCircle2, 
+  Clock, 
+  XCircle,
+  Truck
+} from "lucide-react";
+import { useToast } from "../context/ToastContext";
 import "./Orders.css";
 
 function Orders() {
-  const { orders } = useContext(OrderContext);
+  const { orders, cancelOrder } = useContext(OrderContext);
+  const { addToast } = useToast();
+
+  const handleCancel = (orderId) => {
+    if (window.confirm(`Are you sure you want to cancel order #${orderId}?`)) {
+      cancelOrder(orderId);
+      addToast(`Order #${orderId} was cancelled.`, "success");
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "Delivered":
+        return (
+          <span className="order-status-badge status-delivered">
+            <CheckCircle2 size={15} /> Delivered
+          </span>
+        );
+      case "Cancelled":
+        return (
+          <span className="order-status-badge status-cancelled">
+            <XCircle size={15} /> Cancelled
+          </span>
+        );
+      case "Shipped":
+        return (
+          <span className="order-status-badge status-shipped">
+            <Truck size={15} /> Out for Delivery
+          </span>
+        );
+      default:
+        return (
+          <span className="order-status-badge status-confirmed">
+            <Clock size={15} /> Processing
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="orders-page-container">
-      <div className="orders-title-block" style={{ marginBottom: "24px" }}>
+      <div className="orders-title-block">
         <h1>My Orders</h1>
         <p>Track, manage, and review your previous ARKart orders</p>
       </div>
 
       {orders.length === 0 ? (
-        <div style={{
-          textAlign: "center",
-          padding: "80px 20px",
-          background: "#ffffff",
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid var(--border)",
-          boxShadow: "var(--shadow-sm)"
-        }}>
-          <div style={{
-            width: "80px",
-            height: "80px",
-            background: "var(--primary-light)",
-            color: "var(--primary)",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 20px"
-          }}>
-            <Package size={40} />
+        <div className="orders-empty-card">
+          <div className="orders-empty-icon">
+            <Package size={42} />
           </div>
-          <h2 style={{ fontSize: "22px", fontWeight: "700", marginBottom: "8px" }}>No orders placed yet</h2>
-          <p style={{ color: "var(--text-muted)", marginBottom: "24px" }}>
-            When you purchase items from ARKart, they will show up here.
+          <h2>No orders placed yet</h2>
+          <p>
+            When you purchase items from ARKart, your order receipts and shipping trackers will show up here.
           </p>
-          <Link
-            to="/products"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px 28px",
-              background: "var(--primary)",
-              color: "#ffffff",
-              borderRadius: "var(--radius-full)",
-              fontWeight: "700",
-              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)"
-            }}
-          >
+          <Link to="/products" className="orders-shop-btn">
             <span>Start Shopping</span>
             <ArrowRight size={16} />
           </Link>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="orders-list">
           {orders.map((order) => (
-            <div
-              key={order.id}
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-lg)",
-                padding: "24px",
-                boxShadow: "var(--shadow-sm)"
-              }}
-            >
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "12px",
-                borderBottom: "1px solid var(--border)",
-                paddingBottom: "16px",
-                marginBottom: "20px"
-              }}>
+            <div key={order.id} className="order-card-box">
+              {/* Order Card Header */}
+              <div className="order-card-header">
                 <div>
-                  <span style={{
-                    display: "inline-block",
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    background: "var(--primary-light)",
-                    color: "var(--primary)",
-                    padding: "3px 10px",
-                    borderRadius: "var(--radius-full)",
-                    marginBottom: "6px"
-                  }}>
-                    #{order.id}
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "13px" }}>
+                  <span className="order-id-tag">#{order.id}</span>
+                  <div className="order-meta-info">
                     <Calendar size={14} />
                     <span>Placed on {order.date}</span>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#dcfce7", color: "#15803d", padding: "6px 14px", borderRadius: "var(--radius-full)", fontSize: "13px", fontWeight: "700" }}>
-                  <CheckCircle2 size={16} />
-                  <span>{order.status || "Confirmed"}</span>
+                <div className="order-header-right">
+                  {getStatusBadge(order.status || "Confirmed")}
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", color: "var(--text-muted)", fontSize: "13px", marginBottom: "18px" }}>
-                <MapPin size={16} style={{ flexShrink: 0, marginTop: "2px", color: "var(--primary)" }} />
-                <span>Delivering to: <strong>{order.customer?.name}</strong> • {order.customer?.address}, {order.customer?.city}</span>
+              {/* Delivery Destination */}
+              <div className="order-delivery-info">
+                <MapPin size={16} className="pin-icon" />
+                <span>
+                  Delivering to: <strong>{order.customer?.name}</strong> • {order.customer?.address}, {order.customer?.city}
+                </span>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", background: "#f8fafc", padding: "16px", borderRadius: "var(--radius-md)" }}>
+              {/* Order Items List */}
+              <div className="order-items-grid">
                 {order.items?.map((item) => (
-                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div key={item.id} className="order-item-row">
+                    <div className="order-item-left">
                       {item.image && (
                         <img
                           src={item.image}
                           alt={item.name}
-                          style={{ width: "38px", height: "38px", objectFit: "contain", background: "#ffffff", borderRadius: "6px", padding: "2px" }}
+                          className="order-item-thumb"
                         />
                       )}
                       <div>
-                        <strong style={{ color: "var(--text-main)" }}>{item.name}</strong>
-                        <span style={{ color: "var(--text-muted)", marginLeft: "8px" }}>× {item.quantity}</span>
+                        <strong className="order-item-title">{item.name}</strong>
+                        <span className="order-item-qty">Qty: {item.quantity}</span>
                       </div>
                     </div>
-                    <span style={{ fontWeight: "700", color: "var(--text-main)" }}>
+                    <span className="order-item-price">
                       ₹{(item.price * item.quantity).toLocaleString("en-IN")}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "18px", paddingTop: "14px", borderTop: "1px dashed var(--border)" }}>
-                <span style={{ fontSize: "14px", color: "var(--text-muted)" }}>Payment: {order.paymentMethod || "Cash on Delivery"}</span>
-                <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--primary)" }}>
-                  Total: ₹{order.total.toLocaleString("en-IN")}
+              {/* Order Footer & Actions */}
+              <div className="order-card-footer">
+                <div className="order-payment-method">
+                  <span>Payment:</span>
+                  <strong>{order.paymentMethod || "Cash on Delivery"}</strong>
+                </div>
+
+                <div className="order-actions-group">
+                  {order.status !== "Cancelled" && order.status !== "Delivered" && (
+                    <button
+                      className="cancel-order-btn"
+                      onClick={() => handleCancel(order.id)}
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                  <div className="order-total-amount">
+                    Total: ₹{order.total.toLocaleString("en-IN")}
+                  </div>
                 </div>
               </div>
             </div>

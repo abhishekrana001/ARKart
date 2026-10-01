@@ -2,6 +2,7 @@ import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
@@ -17,6 +18,7 @@ import Login from "./pages/Login";
 function App() {
   return (
     <div className="app-container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <ScrollToTop />
       <Navbar />
       <main style={{ flex: 1 }}>
         <Routes>

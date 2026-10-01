@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   Search, 
@@ -10,13 +10,17 @@ import {
   ChevronDown, 
   Package, 
   LogIn,
-  LogOut 
+  LogOut,
+  Sun,
+  Moon 
 } from "lucide-react";
 import "./Navbar.css";
 import Arkart from "../assets/arkart.png";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
 import { AuthContext } from "../context/AuthContext";
+import { ThemeContext } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 
 function Navbar() {
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -24,19 +28,49 @@ function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navSearch, setNavSearch] = useState("");
 
-  const { cart } = useContext(CartContext);
+  const { totalItemCount } = useContext(CartContext);
   const { wishlist } = useContext(WishlistContext);
   const { currentUser, logout } = useContext(AuthContext);
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  const { addToast } = useToast();
   const navigate = useNavigate();
 
-  const totalCartCount = cart ? cart.reduce((total, item) => total + item.quantity, 0) : 0;
   const totalWishlistCount = wishlist ? wishlist.length : 0;
+  const navRef = useRef(null);
+
+  // Close dropdowns when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+        setAccountOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setCategoryOpen(false);
+        setAccountOpen(false);
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (navSearch.trim()) {
       navigate(`/products?search=${encodeURIComponent(navSearch.trim())}`);
       setNavSearch("");
+      setMenuOpen(false);
+      setCategoryOpen(false);
+      setAccountOpen(false);
     }
   };
 
@@ -46,13 +80,32 @@ function Navbar() {
     setMenuOpen(false);
   };
 
+  const toggleCategory = (e) => {
+    e.stopPropagation();
+    setCategoryOpen((prev) => !prev);
+    setAccountOpen(false);
+  };
+
+  const toggleAccount = (e) => {
+    e.stopPropagation();
+    setAccountOpen((prev) => !prev);
+    setCategoryOpen(false);
+  };
+
+  const handleThemeToggle = () => {
+    toggleTheme();
+    const nextTheme = theme === "dark" ? "Light" : "Dark";
+    addToast(`Switched to ${nextTheme} Mode`, "success", 2000);
+  };
+
   return (
-    <header className="navbar-header">
+    <header className="navbar-header" ref={navRef}>
       <nav className="navbar">
         <Link to="/" className="name-logo" onClick={closeDropdowns}>
           <img src={Arkart} alt="ARKart logo" />
         </Link>
 
+        {/* Desktop and Mobile navigation links */}
         <div className={`nav-links ${menuOpen ? "active" : ""}`}>
           <form className="mobile-search-box" onSubmit={handleSearchSubmit}>
             <Search size={16} className="search-icon" />
@@ -72,13 +125,12 @@ function Navbar() {
             Shop Now
           </Link>
 
-          <div 
-            className="category-wrapper" 
-            onMouseLeave={() => setCategoryOpen(false)}
-          >
+          <div className="category-wrapper">
             <button
+              type="button"
               className={`category-btn ${categoryOpen ? "open" : ""}`}
-              onClick={() => setCategoryOpen(!categoryOpen)}
+              onClick={toggleCategory}
+              aria-expanded={categoryOpen}
             >
               Categories <ChevronDown size={16} className="chevron" />
             </button>
@@ -126,6 +178,20 @@ function Navbar() {
             </button>
           </form>
 
+          {/* Theme Toggle Button */}
+          <button
+            className="action-icon-btn theme-toggle-btn"
+            onClick={handleThemeToggle}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle Dark/Light Mode"
+          >
+            {theme === "dark" ? (
+              <Sun size={20} className="theme-icon sun-icon" />
+            ) : (
+              <Moon size={20} className="theme-icon moon-icon" />
+            )}
+          </button>
+
           <Link to="/wishlist" className="action-icon-btn cart-btn-wrapper" title="Wishlist">
             <Heart size={21} />
             {totalWishlistCount > 0 && (
@@ -135,19 +201,18 @@ function Navbar() {
 
           <Link to="/cart" className="action-icon-btn cart-btn-wrapper" title="Cart">
             <ShoppingBag size={21} />
-            {totalCartCount > 0 && (
-              <span className="cart-badge">{totalCartCount}</span>
+            {totalItemCount > 0 && (
+              <span className="cart-badge">{totalItemCount}</span>
             )}
           </Link>
 
-          <div 
-            className="account-wrapper" 
-            onMouseLeave={() => setAccountOpen(false)}
-          >
+          <div className="account-wrapper">
             <button
+              type="button"
               className="action-icon-btn account-btn"
-              onClick={() => setAccountOpen(!accountOpen)}
+              onClick={toggleAccount}
               title={currentUser ? `Logged in as ${currentUser.name}` : "My Account"}
+              aria-expanded={accountOpen}
             >
               <User size={21} />
               {currentUser && (
@@ -158,9 +223,9 @@ function Navbar() {
             {accountOpen && (
               <div className="account-dropdown">
                 {currentUser ? (
-                  <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: "4px" }}>
-                    <p style={{ fontSize: "11px", color: "#64748b" }}>Signed in as</p>
-                    <p style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div className="account-dropdown-user-info">
+                    <p className="account-user-greeting">Signed in as</p>
+                    <p className="account-user-name">
                       {currentUser.name}
                     </p>
                   </div>
@@ -181,22 +246,9 @@ function Navbar() {
                     onClick={() => {
                       logout();
                       closeDropdowns();
+                      addToast("Signed out successfully", "success");
                     }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "none",
-                      background: "none",
-                      color: "#b91c1c",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      borderRadius: "var(--radius-sm)",
-                      textAlign: "left"
-                    }}
+                    className="account-logout-btn"
                   >
                     <LogOut size={16} /> Sign Out
                   </button>

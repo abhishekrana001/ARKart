@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { CartContext } from "../context/CartContext";
 import { OrderContext } from "../context/OrderContext";
 import { AuthContext } from "../context/AuthContext";
@@ -10,33 +10,44 @@ import {
   ShieldCheck, 
   ArrowLeft, 
   ArrowRight,
-  PackageCheck
+  PackageCheck,
+  Tag
 } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 import "./Checkout.css";
 
 function Checkout() {
-  const { cart, setCart } = useContext(CartContext);
-  const { orders, setOrders } = useContext(OrderContext);
+  const { cart, clearCart, rawSubtotal, appliedDiscount, finalTotal, couponCode } = useContext(CartContext);
+  const { addOrder } = useContext(OrderContext);
   const { currentUser } = useContext(AuthContext);
+  const { addToast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: currentUser?.name || "",
     email: currentUser?.email || "",
     phone: currentUser?.phone || "",
-    address: "",
-    city: "",
-    pincode: "",
+    address: currentUser?.address || "",
+    city: currentUser?.city || "",
+    pincode: currentUser?.pincode || "",
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setFormData((prev) => ({
+        name: prev.name || currentUser.name || "",
+        email: prev.email || currentUser.email || "",
+        phone: prev.phone || currentUser.phone || "",
+        address: prev.address || currentUser.address || "",
+        city: prev.city || currentUser.city || "",
+        pincode: prev.pincode || currentUser.pincode || "",
+      }));
+    }
+  }, [currentUser]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submittedOrder, setSubmittedOrder] = useState(null);
   const [error, setError] = useState("");
-
-  const totalPrice = cart.reduce(
-    (total, product) => total + product.price * product.quantity,
-    0
-  );
 
   const handleInputChange = (e) => {
     setFormData({
@@ -50,6 +61,7 @@ function Checkout() {
 
     if (!formData.name.trim() || !formData.address.trim() || !formData.city.trim() || !formData.phone.trim()) {
       setError("Please complete all required delivery details.");
+      addToast("Please fill in all required fields", "error");
       return;
     }
 
@@ -68,14 +80,18 @@ function Checkout() {
       }),
       customer: { ...formData },
       items: [...cart],
-      total: totalPrice,
+      subtotal: rawSubtotal,
+      discount: appliedDiscount,
+      couponCode: couponCode || null,
+      total: finalTotal,
       paymentMethod: paymentMethod === "cod" ? "Cash on Delivery" : "UPI / Online Payment",
       status: "Confirmed",
     };
 
-    setOrders([newOrder, ...orders]);
-    setCart([]);
+    addOrder(newOrder);
+    clearCart();
     setSubmittedOrder(newOrder);
+    addToast("Order placed successfully!", "success");
     setError("");
   };
 
@@ -90,7 +106,7 @@ function Checkout() {
           <span className="success-order-id">Order ID: #{submittedOrder.id}</span>
           <h1>Thank You for Your Order!</h1>
           <p className="success-subtitle">
-            A confirmation has been sent for <strong>{submittedOrder.customer.name}</strong>. We are preparing your package for express dispatch.
+            A confirmation has been saved for <strong>{submittedOrder.customer.name}</strong>. We are preparing your package for express dispatch.
           </p>
 
           <div className="success-details-box">
@@ -99,11 +115,21 @@ function Checkout() {
               <strong>{submittedOrder.customer.address}, {submittedOrder.customer.city} {submittedOrder.customer.pincode}</strong>
             </div>
             <div className="success-detail-row">
+              <span>Contact Phone:</span>
+              <strong>{submittedOrder.customer.phone}</strong>
+            </div>
+            <div className="success-detail-row">
               <span>Payment Mode:</span>
               <strong>{submittedOrder.paymentMethod}</strong>
             </div>
+            {submittedOrder.discount > 0 && (
+              <div className="success-detail-row">
+                <span>Coupon Applied:</span>
+                <strong style={{ color: "var(--success)" }}>{submittedOrder.couponCode} (-₹{submittedOrder.discount})</strong>
+              </div>
+            )}
             <div className="success-detail-row">
-              <span>Total Paid:</span>
+              <span>Total Paid / Payable:</span>
               <strong className="success-total">₹{submittedOrder.total.toLocaleString("en-IN")}</strong>
             </div>
           </div>
@@ -252,7 +278,7 @@ function Checkout() {
                   <Banknote size={22} className="payment-icon" />
                   <div>
                     <strong>Cash on Delivery (COD)</strong>
-                    <p>Pay in cash or UPI when your order arrives</p>
+                    <p>Pay safely in cash or UPI when your order arrives</p>
                   </div>
                 </label>
 
@@ -266,8 +292,8 @@ function Checkout() {
                   />
                   <CreditCard size={22} className="payment-icon" />
                   <div>
-                    <strong>Online Payment / UPI / Cards</strong>
-                    <p>Pay instantly via Google Pay, PhonePe, Cards</p>
+                    <strong>Online Payment / UPI / Cards (Simulated)</strong>
+                    <p>Instant verification via UPI, Google Pay, PhonePe, Cards</p>
                   </div>
                 </label>
               </div>
@@ -298,16 +324,30 @@ function Checkout() {
             <div className="checkout-cost-breakdown">
               <div className="cost-row">
                 <span>Items Subtotal</span>
-                <span>₹{totalPrice.toLocaleString("en-IN")}</span>
+                <span>₹{rawSubtotal.toLocaleString("en-IN")}</span>
               </div>
+
+              {appliedDiscount > 0 && (
+                <div className="cost-row discount-row">
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Tag size={13} /> Discount ({couponCode})
+                  </span>
+                  <span style={{ color: "var(--success)", fontWeight: "700" }}>
+                    -₹{appliedDiscount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
+
               <div className="cost-row">
                 <span>Shipping Fee</span>
                 <span className="free-shipping">FREE</span>
               </div>
+
               <div className="cost-divider" />
+
               <div className="cost-total-row">
                 <span>Total Amount</span>
-                <span className="total-amount">₹{totalPrice.toLocaleString("en-IN")}</span>
+                <span className="total-amount">₹{finalTotal.toLocaleString("en-IN")}</span>
               </div>
             </div>
 
@@ -316,13 +356,13 @@ function Checkout() {
               form="checkout-form"
               className="place-order-submit-btn"
             >
-              <span>Place Order (₹{totalPrice.toLocaleString("en-IN")})</span>
+              <span>Place Order (₹{finalTotal.toLocaleString("en-IN")})</span>
               <ArrowRight size={18} />
             </button>
 
             <div className="checkout-security-note">
               <ShieldCheck size={18} />
-              <span>Bank-grade 256-bit SSL encryption</span>
+              <span>100% Verified ARKart Protection</span>
             </div>
           </div>
         </div>

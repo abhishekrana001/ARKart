@@ -18,15 +18,26 @@ import ProductCard from "../components/ProductCard";
 import "./ProductDetails.css";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
+import { useToast } from "../context/ToastContext";
+
+const SIZES_MAP = {
+  fashion: ["S", "M", "L", "XL"],
+  shoes: ["UK 7", "UK 8", "UK 9", "UK 10"],
+  electronics: ["Standard", "Pro Edition"],
+  accessories: ["One Size"],
+  beauty: ["50ml", "100ml"],
+};
 
 function ProductDetails() {
-  const { cart, setCart } = useContext(CartContext);
+  const { addToCart } = useContext(CartContext);
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
+  const { addToast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(0);
 
   const product = products.find((p) => p.id === Number(id));
   const isWishlisted = product ? isInWishlist(product.id) : false;
@@ -43,31 +54,30 @@ function ProductDetails() {
     );
   }
 
+  const sizes = SIZES_MAP[product.category] || ["Standard"];
   const originalPrice = Math.round(product.price * 1.35);
   const discountPercent = Math.round(((originalPrice - product.price) / originalPrice) * 100);
 
   const handleAddToCart = () => {
-    const existingProduct = cart.find((item) => item.id === product.id);
-
-    if (existingProduct) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        )
-      );
-    } else {
-      setCart([...cart, { ...product, quantity }]);
-    }
-
+    addToCart(product, quantity);
+    addToast(`Added ${quantity} × "${product.name}" to cart!`, "cart");
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
+    addToCart(product, quantity);
+    addToast(`Proceeding to checkout...`, "cart");
     navigate("/checkout");
+  };
+
+  const handleToggleWishlist = () => {
+    toggleWishlist(product);
+    if (!isWishlisted) {
+      addToast(`Added to your Wishlist!`, "heart");
+    } else {
+      addToast(`Removed from your Wishlist`, "success");
+    }
   };
 
   const relatedProducts = products
@@ -95,10 +105,10 @@ function ProductDetails() {
         <div className="details-image-card">
           <button 
             className={`details-wishlist-btn ${isWishlisted ? "active" : ""}`}
-            onClick={() => toggleWishlist(product)}
+            onClick={handleToggleWishlist}
             aria-label="Wishlist"
           >
-            <Heart size={20} fill={isWishlisted ? "#ef4444" : "none"} color={isWishlisted ? "#ef4444" : "#64748b"} />
+            <Heart size={20} fill={isWishlisted ? "#ef4444" : "none"} color={isWishlisted ? "#ef4444" : "var(--text-muted)"} />
           </button>
           <div className="image-zoom-box">
             <img src={product.image} alt={product.name} />
@@ -113,10 +123,11 @@ function ProductDetails() {
 
           <div className="details-rating-row">
             <div className="rating-pill">
-              <Star size={16} fill="#f59e0b" color="#f59e0b" />
+              <Star size={15} fill="#f59e0b" color="#f59e0b" />
               <span>{product.rating}</span>
             </div>
-            <span className="review-count">128 Verified Ratings & Reviews</span>
+            <span className="review-count">{product.reviewsCount || 128} Verified Ratings & Reviews</span>
+            <span className="stock-pill">In Stock</span>
           </div>
 
           <div className="details-pricing">
@@ -128,12 +139,31 @@ function ProductDetails() {
             <span className="discount-badge">SAVE ₹{(originalPrice - product.price).toLocaleString("en-IN")}</span>
           </div>
 
-          <p className="inclusive-tax">Inclusive of all applicable taxes</p>
+          <p className="inclusive-tax">Inclusive of all applicable taxes • Free Express Shipping</p>
 
           <div className="details-desc-box">
             <h3>Overview</h3>
             <p>{product.description || "Designed with premium quality materials, delivering exceptional comfort and performance for daily use."}</p>
           </div>
+
+          {/* Size / Variant Options */}
+          {sizes.length > 1 && (
+            <div className="variant-section">
+              <span className="variant-label">Select Option:</span>
+              <div className="variant-options">
+                {sizes.map((s, idx) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`variant-chip ${selectedSize === idx ? "active" : ""}`}
+                    onClick={() => setSelectedSize(idx)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quantity Controls */}
           <div className="quantity-section">

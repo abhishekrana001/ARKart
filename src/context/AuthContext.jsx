@@ -5,10 +5,14 @@ export const AuthContext = createContext();
 // Sample initial user for instant testing if storage is empty
 const INITIAL_DEMO_USERS = [
   {
+    id: "USR-DEMO-01",
     name: "Abhishek",
     email: "abhishek@arkart.com",
     password: "password123",
     phone: "9876543210",
+    address: "Flat 402, Green Valley Heights",
+    city: "New Delhi",
+    pincode: "110001",
     joined: "30 Sep 2026",
   },
 ];
@@ -30,9 +34,12 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem("arkart_current_user");
-      return saved ? JSON.parse(saved) : null;
+      if (saved) return JSON.parse(saved);
+      // Auto login initial demo user if empty
+      localStorage.setItem("arkart_current_user", JSON.stringify(INITIAL_DEMO_USERS[0]));
+      return INITIAL_DEMO_USERS[0];
     } catch {
-      return null;
+      return INITIAL_DEMO_USERS[0];
     }
   });
 
@@ -48,7 +55,6 @@ export function AuthProvider({ children }) {
     try {
       if (currentUser) {
         localStorage.setItem("arkart_current_user", JSON.stringify(currentUser));
-        // Keep legacy key synced for compatibility
         localStorage.setItem("arkart_user", JSON.stringify(currentUser));
       } else {
         localStorage.removeItem("arkart_current_user");
@@ -60,7 +66,7 @@ export function AuthProvider({ children }) {
   }, [currentUser]);
 
   // Register a new user
-  const register = ({ name, email, password, phone }) => {
+  const register = ({ name, email, password, phone, address = "", city = "", pincode = "" }) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // Check if user already exists
@@ -75,6 +81,9 @@ export function AuthProvider({ children }) {
       email: cleanEmail,
       password: password,
       phone: phone ? phone.trim() : "",
+      address: address.trim(),
+      city: city.trim(),
+      pincode: pincode.trim(),
       joined: new Date().toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
@@ -104,13 +113,39 @@ export function AuthProvider({ children }) {
     return { success: true, user };
   };
 
+  // Update profile details
+  const updateProfile = (updatedFields) => {
+    if (!currentUser) return { success: false, message: "No active user session." };
+
+    const updatedUser = {
+      ...currentUser,
+      ...updatedFields,
+    };
+
+    setCurrentUser(updatedUser);
+    setUsers((prevUsers) =>
+      prevUsers.map((u) => (u.email === currentUser.email ? updatedUser : u))
+    );
+
+    return { success: true, user: updatedUser };
+  };
+
   // Logout current user
   const logout = () => {
     setCurrentUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, register, login, logout, users }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        register,
+        login,
+        logout,
+        updateProfile,
+        users,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

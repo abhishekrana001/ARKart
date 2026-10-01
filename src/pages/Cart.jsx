@@ -9,59 +9,54 @@ import {
   ShoppingBag, 
   ArrowRight, 
   ShieldCheck, 
-  Tag 
+  Tag,
+  Check,
+  X
 } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 
 function Cart() {
   const navigate = useNavigate();
-  const { cart, setCart } = useContext(CartContext);
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const {
+    cart,
+    removeFromCart,
+    increaseQuantity,
+    decreaseQuantity,
+    couponCode,
+    appliedDiscount,
+    rawSubtotal,
+    finalTotal,
+    totalItemCount,
+    applyCoupon,
+    removeCoupon
+  } = useContext(CartContext);
+
+  const { addToast } = useToast();
+  const [inputCoupon, setInputCoupon] = useState("");
   const [couponMsg, setCouponMsg] = useState("");
 
-  const removeFromCart = (id) => {
-    const updatedCart = cart.filter((product) => product.id !== id);
-    setCart(updatedCart);
+  const handleRemove = (product) => {
+    removeFromCart(product.id);
+    addToast(`Removed "${product.name}" from cart`, "success");
   };
-
-  const increaseQuantity = (id) => {
-    setCart(
-      cart.map((product) =>
-        product.id === id
-          ? { ...product, quantity: product.quantity + 1 }
-          : product
-      )
-    );
-  };
-
-  const decreaseQuantity = (id) => {
-    setCart(
-      cart.map((product) =>
-        product.id === id && product.quantity > 1
-          ? { ...product, quantity: product.quantity - 1 }
-          : product
-      )
-    );
-  };
-
-  const rawSubtotal = cart.reduce(
-    (total, product) => total + product.price * product.quantity,
-    0
-  );
 
   const handleApplyCoupon = (e) => {
     e.preventDefault();
-    if (couponCode.trim().toUpperCase() === "ARKART15") {
-      const discount = Math.round(rawSubtotal * 0.15);
-      setAppliedDiscount(discount);
-      setCouponMsg("Promo code ARKART15 applied! 15% saved.");
-    } else {
-      setCouponMsg("Invalid promo code. Try 'ARKART15'");
+    if (!inputCoupon.trim()) return;
+
+    const res = applyCoupon(inputCoupon);
+    setCouponMsg(res.message);
+    if (res.success) {
+      addToast(res.message, "success");
+      setInputCoupon("");
     }
   };
 
-  const finalTotal = Math.max(0, rawSubtotal - appliedDiscount);
-  const totalItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponMsg("");
+    addToast("Coupon removed", "success");
+  };
 
   return (
     <div className="cart-page-wrapper">
@@ -98,7 +93,7 @@ function Cart() {
                     <span className="cart-item-cat">{product.category}</span>
                     <button
                       className="cart-remove-icon-btn"
-                      onClick={() => removeFromCart(product.id)}
+                      onClick={() => handleRemove(product)}
                       title="Remove product"
                     >
                       <Trash2 size={18} />
@@ -153,23 +148,33 @@ function Cart() {
               <h3>Order Summary</h3>
 
               {/* Promo Code Form */}
-              <form className="promo-form" onSubmit={handleApplyCoupon}>
-                <div className="promo-input-wrap">
-                  <Tag size={16} className="tag-icon" />
-                  <input
-                    type="text"
-                    placeholder="Promo code (e.g. ARKART15)"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                  />
+              {couponCode ? (
+                <div className="applied-coupon-pill">
+                  <div className="coupon-info">
+                    <Check size={16} color="var(--success)" />
+                    <span>Coupon <strong>{couponCode}</strong> applied</span>
+                  </div>
+                  <button onClick={handleRemoveCoupon} className="remove-coupon-btn" title="Remove coupon">
+                    <X size={14} />
+                  </button>
                 </div>
-                <button type="submit">Apply</button>
-              </form>
+              ) : (
+                <form className="promo-form" onSubmit={handleApplyCoupon}>
+                  <div className="promo-input-wrap">
+                    <Tag size={16} className="tag-icon" />
+                    <input
+                      type="text"
+                      placeholder="Promo code (e.g. ARKART15)"
+                      value={inputCoupon}
+                      onChange={(e) => setInputCoupon(e.target.value)}
+                    />
+                  </div>
+                  <button type="submit">Apply</button>
+                </form>
+              )}
 
-              {couponMsg && (
-                <p className={`promo-feedback ${appliedDiscount > 0 ? "success" : "error"}`}>
-                  {couponMsg}
-                </p>
+              {couponMsg && !couponCode && (
+                <p className="promo-feedback error">{couponMsg}</p>
               )}
 
               <div className="summary-breakdown">
@@ -180,7 +185,7 @@ function Cart() {
 
                 {appliedDiscount > 0 && (
                   <div className="summary-line discount">
-                    <span>Discount (ARKART15)</span>
+                    <span>Discount ({couponCode})</span>
                     <span>-₹{appliedDiscount.toLocaleString("en-IN")}</span>
                   </div>
                 )}

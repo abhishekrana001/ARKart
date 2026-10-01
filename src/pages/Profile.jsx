@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { 
   Package, 
@@ -8,286 +8,274 @@ import {
   ArrowRight, 
   Phone, 
   Mail, 
-  Calendar 
+  Calendar,
+  MapPin,
+  Edit3,
+  Check,
+  X
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { OrderContext } from "../context/OrderContext";
 import { WishlistContext } from "../context/WishlistContext";
 import { CartContext } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import Login from "./Login";
+import "./Profile.css";
 
 function Profile() {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, logout, updateProfile } = useContext(AuthContext);
   const { orders } = useContext(OrderContext);
   const { wishlist } = useContext(WishlistContext);
-  const { cart } = useContext(CartContext);
+  const { totalItemCount } = useContext(CartContext);
+  const { addToast } = useToast();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    name: currentUser?.name || "",
+    phone: currentUser?.phone || "",
+    address: currentUser?.address || "",
+    city: currentUser?.city || "",
+    pincode: currentUser?.pincode || "",
+  });
 
   // If user is not logged in, show Login/Register tabs
   if (!currentUser) {
     return <Login />;
   }
 
-  const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const handleEditChange = (e) => {
+    setEditData({
+      ...editData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    if (!editData.name.trim()) {
+      addToast("Name cannot be empty", "error");
+      return;
+    }
+
+    updateProfile(editData);
+    setIsEditing(false);
+    addToast("Profile details updated successfully!", "success");
+  };
+
+  const handleCancelEdit = () => {
+    setEditData({
+      name: currentUser.name || "",
+      phone: currentUser.phone || "",
+      address: currentUser.address || "",
+      city: currentUser.city || "",
+      pincode: currentUser.pincode || "",
+    });
+    setIsEditing(false);
+  };
 
   return (
-    <div style={{ maxWidth: "800px", margin: "40px auto 80px", padding: "0 24px" }}>
+    <div className="profile-page-container">
       {/* Profile Header Card */}
-      <div style={{
-        background: "#ffffff",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-lg)",
-        padding: "36px 30px",
-        boxShadow: "var(--shadow-sm)",
-        marginBottom: "24px"
-      }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "24px",
-          flexWrap: "wrap",
-          borderBottom: "1px solid var(--border)",
-          paddingBottom: "24px",
-          marginBottom: "24px"
-        }}>
-          <div style={{
-            width: "80px",
-            height: "80px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-            color: "#ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "32px",
-            fontWeight: "800",
-            flexShrink: 0,
-            boxShadow: "0 6px 18px rgba(79, 70, 229, 0.35)"
-          }}>
+      <div className="profile-header-card">
+        <div className="profile-user-main">
+          <div className="profile-avatar-circle">
             {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
           </div>
 
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: "26px", fontWeight: "800", color: "var(--text-main)", marginBottom: "4px" }}>
+          <div className="profile-user-info">
+            <h1 className="profile-user-name">
               {currentUser.name}
             </h1>
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", color: "var(--text-muted)", fontSize: "14px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div className="profile-user-badges">
+              <span className="profile-badge-item">
                 <Mail size={15} color="var(--primary)" />
                 {currentUser.email}
               </span>
               {currentUser.phone && (
-                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className="profile-badge-item">
                   <Phone size={15} color="var(--primary)" />
                   {currentUser.phone}
                 </span>
               )}
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span className="profile-badge-item">
                 <Calendar size={15} color="var(--primary)" />
                 Member since {currentUser.joined || "Recent"}
               </span>
             </div>
           </div>
 
-          <button
-            onClick={logout}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 18px",
-              background: "#fee2e2",
-              color: "#b91c1c",
-              border: "none",
-              borderRadius: "var(--radius-full)",
-              fontSize: "13px",
-              fontWeight: "700",
-              cursor: "pointer",
-              transition: "background 0.2s"
-            }}
-          >
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
+          <div className="profile-header-actions">
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="profile-edit-btn"
+                title="Edit your contact & address info"
+              >
+                <Edit3 size={15} />
+                <span>Edit Profile</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                logout();
+                addToast("Signed out successfully", "success");
+              }}
+              className="profile-signout-btn"
+            >
+              <LogOut size={15} />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
 
+        {/* Edit Profile Form */}
+        {isEditing && (
+          <form className="profile-edit-form" onSubmit={handleSaveProfile}>
+            <h3>Edit Personal Information</h3>
+            <div className="profile-edit-grid">
+              <div className="form-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editData.name}
+                  onChange={handleEditChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={editData.phone}
+                  onChange={handleEditChange}
+                  placeholder="e.g. 9876543210"
+                />
+              </div>
+
+              <div className="form-group full-width">
+                <label>Default Street Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={editData.address}
+                  onChange={handleEditChange}
+                  placeholder="House No, Street, Locality"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>City & State</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={editData.city}
+                  onChange={handleEditChange}
+                  placeholder="e.g. New Delhi"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Pincode</label>
+                <input
+                  type="text"
+                  name="pincode"
+                  value={editData.pincode}
+                  onChange={handleEditChange}
+                  placeholder="e.g. 110001"
+                />
+              </div>
+            </div>
+
+            <div className="profile-edit-actions">
+              <button type="submit" className="save-profile-btn">
+                <Check size={16} /> Save Changes
+              </button>
+              <button
+                type="button"
+                className="cancel-profile-btn"
+                onClick={handleCancelEdit}
+              >
+                <X size={16} /> Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Saved Address Preview */}
+        {!isEditing && currentUser.address && (
+          <div className="profile-saved-address">
+            <div className="address-header">
+              <MapPin size={16} color="var(--primary)" />
+              <strong>Default Delivery Destination:</strong>
+            </div>
+            <p>
+              {currentUser.address}, {currentUser.city} {currentUser.pincode}
+            </p>
+          </div>
+        )}
+
         {/* Quick Stats Grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "16px"
-        }}>
-          <Link
-            to="/orders"
-            style={{
-              background: "#f8fafc",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              padding: "18px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--primary-light)",
-              color: "var(--primary)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0
-            }}>
+        <div className="profile-stats-grid">
+          <Link to="/orders" className="profile-stat-card">
+            <div className="stat-icon-wrap stat-orders">
               <Package size={22} />
             </div>
             <div>
-              <strong style={{ display: "block", fontSize: "20px", color: "var(--text-main)" }}>
-                {orders.length}
-              </strong>
-              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Total Orders</span>
+              <strong className="stat-count">{orders.length}</strong>
+              <span className="stat-label">Total Orders</span>
             </div>
           </Link>
 
-          <Link
-            to="/wishlist"
-            style={{
-              background: "#f8fafc",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              padding: "18px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "var(--radius-sm)",
-              background: "#fee2e2",
-              color: "#ef4444",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0
-            }}>
+          <Link to="/wishlist" className="profile-stat-card">
+            <div className="stat-icon-wrap stat-wishlist">
               <Heart size={22} />
             </div>
             <div>
-              <strong style={{ display: "block", fontSize: "20px", color: "var(--text-main)" }}>
-                {wishlist.length}
-              </strong>
-              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Saved Items</span>
+              <strong className="stat-count">{wishlist.length}</strong>
+              <span className="stat-label">Saved Wishlist</span>
             </div>
           </Link>
 
-          <Link
-            to="/cart"
-            style={{
-              background: "#f8fafc",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              padding: "18px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "var(--radius-sm)",
-              background: "#dcfce7",
-              color: "#10b981",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0
-            }}>
+          <Link to="/cart" className="profile-stat-card">
+            <div className="stat-icon-wrap stat-cart">
               <ShoppingBag size={22} />
             </div>
             <div>
-              <strong style={{ display: "block", fontSize: "20px", color: "var(--text-main)" }}>
-                {totalCartCount}
-              </strong>
-              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>In Your Cart</span>
+              <strong className="stat-count">{totalItemCount}</strong>
+              <span className="stat-label">In Your Cart</span>
             </div>
           </Link>
         </div>
       </div>
 
       {/* Account Navigation List */}
-      <div style={{
-        background: "#ffffff",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-lg)",
-        padding: "10px",
-        boxShadow: "var(--shadow-sm)"
-      }}>
-        <Link
-          to="/orders"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderRadius: "var(--radius-md)",
-            color: "var(--text-main)",
-            fontWeight: "600",
-            fontSize: "15px",
-            borderBottom: "1px solid #f1f5f9"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div className="profile-nav-card">
+        <Link to="/orders" className="profile-nav-link">
+          <div className="nav-link-left">
             <Package size={20} color="var(--primary)" />
             <span>My Orders & Order Tracking</span>
           </div>
-          <ArrowRight size={18} color="#94a3b8" />
+          <ArrowRight size={18} className="arrow-icon" />
         </Link>
 
-        <Link
-          to="/wishlist"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderRadius: "var(--radius-md)",
-            color: "var(--text-main)",
-            fontWeight: "600",
-            fontSize: "15px",
-            borderBottom: "1px solid #f1f5f9"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <Link to="/wishlist" className="profile-nav-link">
+          <div className="nav-link-left">
             <Heart size={20} color="#ef4444" />
             <span>My Wishlist</span>
           </div>
-          <ArrowRight size={18} color="#94a3b8" />
+          <ArrowRight size={18} className="arrow-icon" />
         </Link>
 
-        <Link
-          to="/cart"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderRadius: "var(--radius-md)",
-            color: "var(--text-main)",
-            fontWeight: "600",
-            fontSize: "15px"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <Link to="/cart" className="profile-nav-link no-border">
+          <div className="nav-link-left">
             <ShoppingBag size={20} color="#10b981" />
             <span>View Shopping Cart</span>
           </div>
-          <ArrowRight size={18} color="#94a3b8" />
+          <ArrowRight size={18} className="arrow-icon" />
         </Link>
       </div>
     </div>
